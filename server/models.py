@@ -26,9 +26,10 @@ class Planet(db.Model, SerializerMixin):
     nearest_star = db.Column(db.String)
 
     # Add relationship
+    missions = db.relationship("Mission", back_populates="planet")
 
     # Add serialization rules
-
+    serialize_rules = ("-missions",)
 
 class Scientist(db.Model, SerializerMixin):
     __tablename__ = 'scientists'
@@ -38,10 +39,20 @@ class Scientist(db.Model, SerializerMixin):
     field_of_study = db.Column(db.String)
 
     # Add relationship
+    missions = db.relationship("Mission", back_populates="scientist", cascade="all, delete-orphan")
 
     # Add serialization rules
+    # serialize_only = ("id", "name", "field_of_study")
+    serialize_rules = ("-missions",)
 
     # Add validation
+    @validates("name", "field_of_study")
+    def validate_name_and_field_of_study(self, attr, value):
+        # if not isinstance(value, str):
+        #     raise TypeError(f"{attr} must be a string")
+        if not value:
+            raise ValueError(f"{attr} must be present")
+        return value
 
 
 class Mission(db.Model, SerializerMixin):
@@ -49,12 +60,26 @@ class Mission(db.Model, SerializerMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    #! New code here
+    scientist_id = db.Column(db.Integer, db.ForeignKey("scientists.id"))
+    planet_id = db.Column(db.Integer, db.ForeignKey("planets.id"))
 
     # Add relationships
+    scientist = db.relationship("Scientist", back_populates="missions")
+    planet = db.relationship("Planet", back_populates="missions")
 
     # Add serialization rules
 
     # Add validation
+    @validates("name", "scientist_id", "planet_id")
+    def validate_name_and_field_of_study(self, attr, value):
+        # if attr == "name" and not isinstance(value, str):
+        #     raise TypeError(f"{attr} must be a string")
+        # if attr in ("scientist_id", "planet_id") and not isinstance(value, int):
+        #     raise TypeError(f"{attr} must be a integer")
+        if not value:
+            raise ValueError(f"{attr} must be present")
+        return value
 
 
 # add any models you may need.
